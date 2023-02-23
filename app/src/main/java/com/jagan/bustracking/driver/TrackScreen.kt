@@ -1,6 +1,9 @@
 package com.jagan.bustracking.driver
 
 import android.Manifest.permission.*
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,7 +13,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import com.jagan.bustracking.backgroundlocation.hasLocationPermission
 import com.jagan.bustracking.MainActivity.Companion.startLocationService
 import com.jagan.bustracking.MainActivity.Companion.stopLocationService
@@ -34,13 +40,26 @@ import com.jagan.bustracking.util.StoreData.Companion.dataStoreDriverName
 fun TrackScreen() {
     val locationDetailsUpdated = remember { locationDetails }
     val context = LocalContext.current
-
+    val countOfPermission = rememberSaveable{ mutableStateOf(0) }
 
     // permission
     val multiplePermissionsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permission ->
-        permission.entries.forEach { _ -> }
+        countOfPermission.value = 0
+        permission.entries.forEach { isGranted ->
+            if(isGranted.value){
+                countOfPermission.value++
+            }
+        }
+
+        if(countOfPermission.value!=2){
+            Toast.makeText(context,"Allow permission",Toast.LENGTH_LONG).show()
+            val uri = Uri.fromParts("package",context.packageName,null)
+            val intent = Intent(ACTION_APPLICATION_DETAILS_SETTINGS,uri)
+            startActivity(context,intent,null)
+        }
+
     }
 
     Column(
@@ -114,11 +133,13 @@ fun TrackScreen() {
                                     }
                                 }
                             } else {
-                                Toast.makeText(
-                                    context,
-                                    "fill driver details to start",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                Toast
+                                    .makeText(
+                                        context,
+                                        "fill driver details to start",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                    .show()
                             }
                         }, contentAlignment = Alignment.Center
                 ) {

@@ -86,7 +86,7 @@ class SharedViewModel : ViewModel() {
                if(snapshot!=null && snapshot.exists()){
                    val loginDetails = snapshot.toObject(LoginDetails:: class.java) ?: LoginDetails()
                    if(loginDetails.password == password){
-                       Toast.makeText(context,"Welcome!!",Toast.LENGTH_SHORT).show()
+                       Toast.makeText(context,"Welcome !!",Toast.LENGTH_SHORT).show()
                        navController.navigate(Screen.StudentDashboard.route)
                    }else{
                        Toast.makeText(context,"password incorrect",Toast.LENGTH_SHORT).show()
@@ -109,7 +109,7 @@ class SharedViewModel : ViewModel() {
                if(snapshot!=null && snapshot.exists()){
                    val loginDetails = snapshot.toObject(LoginDetails:: class.java) ?: LoginDetails()
                    if(loginDetails.password == password){
-                       Toast.makeText(context,"Welcome!!",Toast.LENGTH_SHORT).show()
+                       Toast.makeText(context,"Welcome !!",Toast.LENGTH_SHORT).show()
                        navController.navigate(Screen.DriverDashboard.route)
                    }else{
                        Toast.makeText(context,"password incorrect",Toast.LENGTH_SHORT).show()
