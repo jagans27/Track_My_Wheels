@@ -1,6 +1,7 @@
 package com.jagan.bustracking.util
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -33,6 +34,16 @@ class SharedViewModel : ViewModel() {
                 Toast.makeText(context, exception.toString(), Toast.LENGTH_SHORT).show()
             }
         }
+
+    fun updateAlertStatus(context:Context,documentName: String) =
+        CoroutineScope(Dispatchers.IO).launch {
+        val docRef = db.collection("bus").document(documentName)
+
+        docRef.update("status", "problem")
+            .addOnSuccessListener { Log.d("DEBUG", "DocumentSnapshot successfully updated!") }
+            .addOnFailureListener {
+                Toast.makeText(context, it.toString(), Toast.LENGTH_SHORT).show() }
+    }
 
     private val items = MutableLiveData<List<BusDetails>>()
 

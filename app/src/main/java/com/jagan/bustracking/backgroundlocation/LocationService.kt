@@ -13,21 +13,25 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC
 import androidx.core.app.ServiceCompat
 import com.google.android.gms.location.LocationServices
+import com.jagan.bustracking.MainActivity
+import com.jagan.bustracking.MainActivity.Companion.launchScope
 import com.jagan.bustracking.R
 import com.jagan.bustracking.util.BusDetails
 import com.jagan.bustracking.util.SharedViewModel
+import com.jagan.bustracking.util.StoreData
+import com.jagan.bustracking.util.StoreData.Companion.dataStoreAlertStatus
 import com.jagan.bustracking.util.StoreData.Companion.dataStoreBusNumber
 import com.jagan.bustracking.util.StoreData.Companion.dataStoreDriverName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import java.util.*
 
 class LocationService : Service() {
+
+
+    private val dataStore = StoreData(MainActivity.appContext)
 
     companion object {
         const val ACTION_START = "ACTION_START"
@@ -93,13 +97,15 @@ class LocationService : Service() {
                     locationDetails.value
                 )
 
+                Log.d("DEBUG", "=> $dataStoreAlertStatus")
+
                 val busDetails = BusDetails(
                     area = addresses[0].locality.toString(),
                     bus_no  = dataStoreBusNumber,
                     driver_name = dataStoreDriverName,
                     lati = lat,
                     long = long,
-                    status = "active"
+                    status = if(dataStoreAlertStatus=="alert") "problem" else "active"
                 )
 
                 // store the data in database
@@ -108,6 +114,7 @@ class LocationService : Service() {
 
                 // notification notify
                 notificationManager.notify(1, updatedNotification.build())
+
             }
             .launchIn(serviceScope)
 
@@ -115,9 +122,10 @@ class LocationService : Service() {
     }
 
     private fun stop() {
-        Log.d("DEBUG","Close")
-
         if(stateBusDetails!=null){
+            launchScope.launch {
+                dataStore.saveAlertStatus("")
+            }
             stateBusDetails!!.status = "not active"
             SharedViewModel().saveBusLocationDetails(stateBusDetails!!,applicationContext)
         }
@@ -125,12 +133,16 @@ class LocationService : Service() {
         locationDetails.value = "Start your sharing.."
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
         stopSelf()
+
     }
 
     override fun onDestroy() {
 
         if(stateBusDetails!=null){
             stateBusDetails!!.status = "not active"
+            launchScope.launch {
+                dataStore.saveAlertStatus("")
+            }
             SharedViewModel().saveBusLocationDetails(stateBusDetails!!,applicationContext)
         }
 

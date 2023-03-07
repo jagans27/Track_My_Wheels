@@ -4,8 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import android.location.LocationManager
+import android.os.Build
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -20,10 +23,12 @@ class DefaultLocationClient(
     private val client: FusedLocationProviderClient
 ): LocationClient {
 
+    @RequiresApi(Build.VERSION_CODES.P)
     @SuppressLint("MissingPermission")
     override fun getLocationUpdates(interval: Long): Flow<Location> {
         return callbackFlow {
             if(!context.hasLocationPermission()) {
+                Toast.makeText(context,"GPS and Internet permission is turned off!",Toast.LENGTH_SHORT).show()
                 throw LocationClient.LocationException()
             }
 
@@ -32,6 +37,7 @@ class DefaultLocationClient(
             val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
 
             if(!isGpsEnabled && !isNetworkEnabled) {
+                Toast.makeText(context,"GPS and Internet is turned off!",Toast.LENGTH_SHORT).show()
                 throw LocationClient.LocationException()
             }
 
