@@ -21,7 +21,6 @@ class SharedViewModel : ViewModel() {
 
     fun saveBusLocationDetails(data: BusDetails, context: Context) =
         CoroutineScope(Dispatchers.IO).launch {
-
             db.collection("bus").document(data.bus_no).get().addOnSuccessListener {
                 val tempFireStoreRef = Firebase.firestore.collection("bus")
 

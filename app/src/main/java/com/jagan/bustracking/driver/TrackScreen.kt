@@ -53,15 +53,18 @@ fun TrackScreen() {
 
     val scope = rememberCoroutineScope()
     val dataStore = StoreData(context)
-    val startStatus = dataStore.getStartedStatus.collectAsState(initial = "")
+    val startStatus = dataStore.getStartedStatus.collectAsState(initial = "end")
     val alertStatus = dataStore.getAlertStatus.collectAsState(initial = "")
+
+    LaunchedEffect(key1 = startStatus.value ){
+        if(startStatus.value.isEmpty() && startStatus.value.isBlank()){
+            dataStore.saveStartStatus("end")
+        }
+    }
 
     LaunchedEffect(key1 = alertStatus.value) {
         dataStoreAlertStatus = alertStatus.value
     }
-
-    Log.d("DEBUG", alertStatus.value)
-
 
     // permission
     val multiplePermissionsLauncher = rememberLauncherForActivityResult(

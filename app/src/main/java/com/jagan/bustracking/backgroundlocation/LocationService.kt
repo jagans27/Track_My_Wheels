@@ -8,6 +8,7 @@ import android.location.Address
 import android.location.Geocoder
 import android.os.IBinder
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC
@@ -49,10 +50,14 @@ class LocationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        locationClient = DefaultLocationClient(
-            applicationContext,
-            LocationServices.getFusedLocationProviderClient(applicationContext)
-        )
+        try {
+            locationClient = DefaultLocationClient(
+                applicationContext,
+                LocationServices.getFusedLocationProviderClient(applicationContext)
+            )
+        }catch (e:Exception){
+            Toast.makeText(applicationContext,"Some thing went wrong",Toast.LENGTH_SHORT).show()
+        }
 
     }
 
@@ -65,90 +70,99 @@ class LocationService : Service() {
     }
 
     private fun start() {
-        val notification = NotificationCompat.Builder(this, "location")
-            .setContentTitle("Tracking bus location.")
-            .setContentText("Loading.....")
-            .setSmallIcon(R.drawable.applogo)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .setVisibility(VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setColor(121212)
+        try {
+            val notification = NotificationCompat.Builder(this, "location")
+                .setContentTitle("Tracking bus location.")
+                .setContentText("Loading.....")
+                .setSmallIcon(R.drawable.applogo)
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .setVisibility(VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setColor(121212)
 
-        val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        locationClient
-            .getLocationUpdates(5)
-            .catch { e -> e.printStackTrace() }
-            .onEach { location ->
-                val lat = location.latitude.toString()
-                val long = location.longitude.toString()
-                val gcd = Geocoder(this, Locale.getDefault())
+            locationClient
+                .getLocationUpdates(5)
+                .catch { e -> e.printStackTrace() }
+                .onEach { location ->
+                    val lat = location.latitude.toString()
+                    val long = location.longitude.toString()
+                    val gcd = Geocoder(this, Locale.getDefault())
 
-                val addresses: List<Address> =
-                    gcd.getFromLocation(lat.toDouble(), long.toDouble(), 1) as List<Address>
-                locationDetails.value = if (addresses.isNotEmpty()) {
-                    "Location: ($lat, $long) " + addresses[0].locality.toString()
-                } else {
-                    "Location: ($lat, $long)"
+                    val addresses: List<Address> =
+                        gcd.getFromLocation(lat.toDouble(), long.toDouble(), 1) as List<Address>
+                    locationDetails.value = if (addresses.isNotEmpty()) {
+                        "Location: ($lat, $long) " + addresses[0].locality.toString()
+                    } else {
+                        "Location: ($lat, $long)"
+                    }
+                    val updatedNotification = notification.setContentText(
+                        locationDetails.value
+                    )
+
+                    val busDetails = BusDetails(
+                        area = addresses[0].locality.toString(),
+                        bus_no = dataStoreBusNumber,
+                        driver_name = dataStoreDriverName,
+                        lati = lat,
+                        long = long,
+                        status = if (dataStoreAlertStatus == "alert") "problem" else "active"
+                    )
+
+                    // store the data in database
+                    stateBusDetails = busDetails
+                    SharedViewModel().saveBusLocationDetails(busDetails, applicationContext)
+
+                    // notification notify
+                    notificationManager.notify(1, updatedNotification.build())
+
                 }
-                val updatedNotification = notification.setContentText(
-                    locationDetails.value
-                )
+                .launchIn(serviceScope)
 
-                Log.d("DEBUG", "=> $dataStoreAlertStatus")
-
-                val busDetails = BusDetails(
-                    area = addresses[0].locality.toString(),
-                    bus_no  = dataStoreBusNumber,
-                    driver_name = dataStoreDriverName,
-                    lati = lat,
-                    long = long,
-                    status = if(dataStoreAlertStatus=="alert") "problem" else "active"
-                )
-
-                // store the data in database
-                stateBusDetails = busDetails
-                SharedViewModel().saveBusLocationDetails(busDetails,applicationContext)
-
-                // notification notify
-                notificationManager.notify(1, updatedNotification.build())
-
-            }
-            .launchIn(serviceScope)
-
-        startForeground(1, notification.build())
+            startForeground(1, notification.build())
+        }catch (e:Exception){
+            Toast.makeText(applicationContext,"Some thing went wrong",Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun stop() {
-        if(stateBusDetails!=null){
-            launchScope.launch {
-                dataStore.saveAlertStatus("")
+        try {
+            if (stateBusDetails != null) {
+                launchScope.launch {
+                    dataStore.saveAlertStatus("")
+                }
+                stateBusDetails!!.status = "not active"
+                SharedViewModel().saveBusLocationDetails(stateBusDetails!!, applicationContext)
             }
-            stateBusDetails!!.status = "not active"
-            SharedViewModel().saveBusLocationDetails(stateBusDetails!!,applicationContext)
-        }
 
-        locationDetails.value = "Start your sharing.."
-        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
-        stopSelf()
+            locationDetails.value = "Start your sharing.."
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
+            stopSelf()
+        }catch (e:Exception){
+            Toast.makeText(applicationContext,"Some thing went wrong",Toast.LENGTH_SHORT).show()
+        }
 
     }
 
     override fun onDestroy() {
-
-        if(stateBusDetails!=null){
-            stateBusDetails!!.status = "not active"
-            launchScope.launch {
-                dataStore.saveAlertStatus("")
+        try {
+            if (stateBusDetails != null) {
+                stateBusDetails!!.status = "not active"
+                launchScope.launch {
+                    dataStore.saveAlertStatus("")
+                }
+                SharedViewModel().saveBusLocationDetails(stateBusDetails!!, applicationContext)
             }
-            SharedViewModel().saveBusLocationDetails(stateBusDetails!!,applicationContext)
-        }
 
-        Log.d("DEBUG","Close")
-        super.onDestroy()
-        locationDetails.value = "Start your sharing.."
-        serviceScope.cancel()
+            Log.d("DEBUG", "Close")
+            super.onDestroy()
+            locationDetails.value = "Start your sharing.."
+            serviceScope.cancel()
+        }catch (e:Exception){
+            Toast.makeText(applicationContext,"Some thing went wrong",Toast.LENGTH_SHORT).show()
+        }
     }
 }
