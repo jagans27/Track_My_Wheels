@@ -2,7 +2,7 @@
 
 An Android app with two logins, one for students and another for drivers. Students can access the live location of the driver's bus via the map by sharing the live location of the driver.
 
-Download : https://drive.google.com/file/d/1xq7o7aqps6pwHVumIAMY-nlo-Fvdz0Pk/view?usp=share_link
+Download : https://drive.google.com/file/d/1eTWICLI5oMvb7MjFKkBaXV8y1tWyc1Jh/view?usp=share_link
 
 App Screens 👇
 
