@@ -36,10 +36,17 @@ import java.util.*
 @Composable
 fun UpdateScreen() {
 
-
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dataStore = StoreData(context)
+
+    // not editable bus number while in start
+    val startStatus = dataStore.getStartedStatus.collectAsState(initial = "end")
+    LaunchedEffect(key1 = startStatus.value ){
+        if(startStatus.value.isEmpty() && startStatus.value.isBlank()){
+            dataStore.saveStartStatus("end")
+        }
+    }
 
     //retrieve data
     val savedName = dataStore.getName.collectAsState(initial = "")
@@ -114,10 +121,15 @@ fun UpdateScreen() {
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp),
                 value = busNumber.value,
                 onValueChange = {
-                    busNumber.value = it
+                    if(startStatus.value == "end") {
+                        busNumber.value = it
+                    }else{
+                        Toast.makeText(context,"Can't edit stop tracking and edit",Toast.LENGTH_SHORT).show()
+                    }
                 },
                 label = {
                     Text(text = "bus number", fontSize = 18.sp, color = Color.Gray)
+
                 },
                 colors = TextFieldDefaults.textFieldColors(
                     backgroundColor = Color.Transparent,
